@@ -3,15 +3,17 @@ const mysql = require("mysql2");
 const inquirer = require("inquirer");
 
 // database connection
-const db = mysql.createConnection(
-  {
-    host: "localhost",
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DATABASE,
-  },
-  console.log(`Connected to ${process.env.DATABASE}`)
-);
+const pool = mysql.createPool({
+  host: "localhost",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+});
 
 // Options for start prompt
 const menuOptions = [
@@ -31,52 +33,82 @@ const menuOptions = [
   "Delete a role",
 ];
 
-const managerChoices = db.query("SELECT * FROM employee", function (err, results) {
-  return results;
-});
+// array for prompts with employee options
+var employeeChoices = [];
 
-console.log(managerChoices);
+// function to query employees by name
+const employeeQuery = async function() {
+  pool.query(
+  {
+    sql: "SELECT CONCAT(first_name, ' ', last_name) AS employee FROM employee",
+    rowsAsArray: true,
+  },
+  function (err, results, fields) {
+    var arr = []
+    for (let i = 0; i < results.length; i++) {
+      arr.push(results[i][0]);
+    }
+    employeeChoices = arr
+    return employeeChoices;
+  }
+)};
+
+employeeQuery()
+
 
 // function to process menu options
 const queryBuilder = function (action) {
   var choice = menuOptions.indexOf(action);
   switch (choice) {
     case 0:
-      db.query("SELECT * FROM department", function (err, results) {
-        console.table(results);
-      });
-      startPrompt();
+      pool
+        .promise()
+        .query("SELECT * FROM department")
+        .then(([rows, fields]) => {
+          console.table(rows);
+          startPrompt();
+        });
       break;
     case 1:
-      db.query("SELECT * FROM employee", function (err, results) {
-        console.table(results);
-      });
-      startPrompt();
+      pool
+        .promise()
+        .query("SELECT * FROM employee")
+        .then(([rows, fields]) => {
+          console.table(rows);
+          startPrompt();
+        });
       break;
     case 2:
-      db.query("SELECT * FROM role", function (err, results) {
-        console.table(results);
-      });
-      startPrompt();
+      pool
+        .promise()
+        .query("SELECT * FROM role")
+        .then(([rows, fields]) => {
+          console.table(rows);
+          startPrompt();
+        });
       break;
     case 3:
       inquirer
         .prompt([
           {
             type: "list",
-            message: 'Select a manager:',
-            choices: ["Departments", "Employees", "Roles"],
+            message: "Select a manager:",
+            choices: employeeChoices,
             name: "managers",
           },
         ])
         .then((response) => {
-          console.log(response.tableviews);
-          db.query(
-            `SELECT * FROM ${response.tableviews.toLowerCase().slice(0, -1)}`,
-            function (err, results) {
-              console.table(results);
-            }
-          );
+          pool
+            .promise()
+            .query(
+              `SELECT * FROM employee WHERE manager_id = ${
+                employeeChoices.indexOf(response.managers) + 1
+              }`
+            )
+            .then(([rows, fields]) => {
+              console.table(rows);
+              startPrompt();
+            });
         });
       break;
   }
@@ -94,7 +126,6 @@ const startPrompt = function () {
     ])
     .then((response) => {
       queryBuilder(response.action);
-      // console.log(response.action);
     });
 };
 
