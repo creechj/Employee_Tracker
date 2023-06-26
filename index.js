@@ -121,7 +121,13 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `SELECT * FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "${response.managers.substring(0, response.managers.indexOf(' '))}" AND last_name = "${response.managers.substring(response.managers.indexOf(' ') + 1, response.managers.length)}")`
+              `SELECT * FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "${response.managers.substring(
+                0,
+                response.managers.indexOf(" ")
+              )}" AND last_name = "${response.managers.substring(
+                response.managers.indexOf(" ") + 1,
+                response.managers.length
+              )}")`
             )
             .then(([rows, fields]) => {
               console.table(rows);
@@ -143,9 +149,29 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `SELECT * FROM employee WHERE manager_id = ${
-                employeeChoices.indexOf(response.managers) + 1
-              }`
+              `SELECT * FROM employee WHERE employee.role_id IN (SELECT id FROM role WHERE department_id = (SELECT id FROM department WHERE name = '${response.departments}'))`
+            )
+            .then(([rows, fields]) => {
+              console.table(rows);
+              startPrompt();
+            });
+        });
+      break;
+    case 5:
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Select a department:",
+            choices: departmentChoices,
+            name: "departments",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `SELECT department.name as "Department Name", AVG(role.salary) * COUNT(employee.role_id) AS "Total Salary" FROM department, role JOIN employee ON employee.role_id = role.id WHERE department.name = '${response.departments}' AND role.department_id = department.id GROUP BY department.name, department_id`
             )
             .then(([rows, fields]) => {
               console.table(rows);
