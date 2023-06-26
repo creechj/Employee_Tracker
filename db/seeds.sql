@@ -1,21 +1,22 @@
+-- Active: 1686788184095@@127.0.0.1@3306@company_db
 USE company_db;
 
-INSERT INTO department (name)
-VALUES ("IT"),
-       ("Finance"),
-       ("Human Resources"),
-       ("Operations");
+INSERT INTO department (id, name)
+VALUES (1, "IT"),
+       (2, "Finance"),
+       (3, "Human Resources"),
+       (4, "Operations");
 
 SELECT * FROM department;
 
-INSERT INTO role (title, salary, department_id)
-VALUES ("ERP Administrator", 100000, 1),
-       ("ERP Analyst", 80000, 1),
-       ("Chief Financial Officer", 200000, 2),
-       ("Senior Accountant", 90000, 2),
-       ("HR Manager", 100000, 3),
-       ("Ops Director", 100000, 4),
-       ("Junior Operator", 70000, 4);
+INSERT INTO role (id, title, salary, department_id)
+VALUES (1, "ERP Administrator", 100000, 1),
+       (2, "ERP Analyst", 80000, 1),
+       (3, "Chief Financial Officer", 200000, 2),
+       (4, "Senior Accountant", 90000, 2),
+       (5, "HR Manager", 100000, 3),
+       (6, "Ops Director", 100000, 4),
+       (7, "Junior Operator", 70000, 4);
 
 SELECT * FROM role;
 
@@ -34,3 +35,10 @@ VALUES ("William", "Shakespeare", 1, null),
        ("Leo", "Tolstoy", 7, 7);
 
 SELECT manager_id as manager, COUNT(first_name) as employees FROM employee WHERE manager_id IS NOT NULL GROUP BY manager_id;
+
+SELECT * FROM employee;
+
+SELECT * FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "Enid" AND last_name = "Blyton");
+
+SELECT * FROM employee WHERE employee.role_id IN (SELECT id FROM role WHERE department_id = (SELECT id FROM department WHERE name = 'IT'));
+

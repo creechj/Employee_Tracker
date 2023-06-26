@@ -35,26 +35,46 @@ const menuOptions = [
 
 // array for prompts with employee options
 var employeeChoices = [];
+var departmentChoices = [];
 
 // function to query employees by name
-const employeeQuery = async function() {
+const employeeQuery = async function () {
   pool.query(
-  {
-    sql: "SELECT CONCAT(first_name, ' ', last_name) AS employee FROM employee",
-    rowsAsArray: true,
-  },
-  function (err, results, fields) {
-    var arr = []
-    for (let i = 0; i < results.length; i++) {
-      arr.push(results[i][0]);
+    {
+      sql: "SELECT CONCAT(first_name, ' ', last_name) AS employee FROM employee",
+      rowsAsArray: true,
+    },
+    function (err, results, fields) {
+      var arr = [];
+      for (let i = 0; i < results.length; i++) {
+        arr.push(results[i][0]);
+      }
+      employeeChoices = arr;
+      return employeeChoices;
     }
-    employeeChoices = arr
-    return employeeChoices;
-  }
-)};
+  );
+};
 
-employeeQuery()
+// function to query departments
+const departmentQuery = async function () {
+  pool.query(
+    {
+      sql: "SELECT name FROM department",
+      rowsAsArray: true,
+    },
+    function (err, results, fields) {
+      var arr = [];
+      for (let i = 0; i < results.length; i++) {
+        arr.push(results[i][0]);
+      }
+      departmentChoices = arr;
+      return departmentChoices;
+    }
+  );
+};
 
+employeeQuery();
+departmentQuery();
 
 // function to process menu options
 const queryBuilder = function (action) {
@@ -101,6 +121,28 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
+              `SELECT * FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "${response.managers.substring(0, response.managers.indexOf(' '))}" AND last_name = "${response.managers.substring(response.managers.indexOf(' ') + 1, response.managers.length)}")`
+            )
+            .then(([rows, fields]) => {
+              console.table(rows);
+              startPrompt();
+            });
+        });
+      break;
+    case 4:
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Select a department:",
+            choices: departmentChoices,
+            name: "departments",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
               `SELECT * FROM employee WHERE manager_id = ${
                 employeeChoices.indexOf(response.managers) + 1
               }`
@@ -130,3 +172,16 @@ const startPrompt = function () {
 };
 
 startPrompt();
+
+// const testFunction = function() {
+//   var testString = 'Testing String'
+//  console.log(testString.substring(0, testString.indexOf(' ')));
+//  console.log(testString.substring(testString.indexOf(' ')+1, testString.length));
+// };
+
+// testFunction();
+
+// TODOs:
+// create query like employees for depts & roles
+// remember to recall these queries after updates to tables
+// finish list of query options
