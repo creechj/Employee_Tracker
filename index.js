@@ -179,6 +179,28 @@ const queryBuilder = function (action) {
             });
         });
       break;
+    case 6:
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            message: "Enter a new department name:",
+            name: "dept",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `INSERT INTO department (id, name) VALUES (${departmentChoices.length + 1}, '${response.dept}')`
+            )
+            .then(([rows, fields]) => {
+              console.log('Department added.');
+              departmentQuery();
+              startPrompt();
+            });
+        });
+      break;
   }
 };
 
