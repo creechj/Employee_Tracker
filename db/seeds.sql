@@ -1,22 +1,24 @@
 -- Active: 1686788184095@@127.0.0.1@3306@company_db
 USE company_db;
 
-INSERT INTO department (id, name)
-VALUES (1, "IT"),
-       (2, "Finance"),
-       (3, "Human Resources"),
-       (4, "Operations");
+INSERT INTO department (name)
+VALUES ("IT"),
+       ("Finance"),
+       ("Human Resources"),
+       ("Operations");
+
+INSERT INTO department (id, name) VALUES (${departmentChoices.length + 1}, ${response.dept})
 
 SELECT * FROM department;
 
 INSERT INTO role (id, title, salary, department_id)
-VALUES (1, "ERP Administrator", 100000, 1),
-       (2, "ERP Analyst", 80000, 1),
-       (3, "Chief Financial Officer", 200000, 2),
-       (4, "Senior Accountant", 90000, 2),
-       (5, "HR Manager", 100000, 3),
-       (6, "Ops Director", 100000, 4),
-       (7, "Junior Operator", 70000, 4);
+VALUES ("ERP Administrator", 100000, 1),
+       ("ERP Analyst", 80000, 1),
+       ("Chief Financial Officer", 200000, 2),
+       ("Senior Accountant", 90000, 2),
+       ("HR Manager", 100000, 3),
+       ("Ops Director", 100000, 4),
+       ("Junior Operator", 70000, 4);
 
 SELECT * FROM role;
 
@@ -40,5 +42,9 @@ SELECT * FROM employee;
 
 SELECT * FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "Enid" AND last_name = "Blyton");
 
-SELECT * FROM employee WHERE employee.role_id IN (SELECT id FROM role WHERE department_id = (SELECT id FROM department WHERE name = 'IT'));
+SELECT SUM(salary) * COUNT((SELECT role_id FROM employee WHERE employee.role_id IN (SELECT id FROM role WHERE department_id = (SELECT id FROM department WHERE name = 'IT')))) FROM role WHERE department_id IN (SELECT id FROM department WHERE name = 'IT');
+
+
+SELECT SUM(role.salary) * COUNT(employee.role_id) AS Total_Salary FROM role JOIN employee ON employee.role_id = role.id WHERE department_id = (SELECT id FROM department WHERE name = 'Finance') GROUP BY department_id;
+SELECT department.name as "Department Name", AVG(role.salary) * COUNT(employee.role_id) AS "Total Salary" FROM department, role JOIN employee ON employee.role_id = role.id WHERE department.name = 'IT' AND role.department_id = department.id GROUP BY department.name, department_id;
 

@@ -33,9 +33,10 @@ const menuOptions = [
   "Delete a role",
 ];
 
-// array for prompts with employee options
+// array for dynamic prompt choices
 var employeeChoices = [];
 var departmentChoices = [];
+var roleChoices = [];
 
 // function to query employees by name
 const employeeQuery = async function () {
@@ -50,7 +51,7 @@ const employeeQuery = async function () {
         arr.push(results[i][0]);
       }
       employeeChoices = arr;
-      return employeeChoices;
+      return  employeeChoices;
     }
   );
 };
@@ -73,8 +74,27 @@ const departmentQuery = async function () {
   );
 };
 
+// function to query roles
+const roleQuery = async function () {
+  pool.query(
+    {
+      sql: "SELECT title FROM role",
+      rowsAsArray: true,
+    },
+    function (err, results, fields) {
+      var arr = [];
+      for (let i = 0; i < results.length; i++) {
+        arr.push(results[i][0]);
+      }
+      roleChoices = arr;
+      return roleChoices;
+    }
+  );
+};
+
 employeeQuery();
 departmentQuery();
+roleQuery();
 
 // function to process menu options
 const queryBuilder = function (action) {
@@ -192,11 +212,50 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `INSERT INTO department (id, name) VALUES (${departmentChoices.length + 1}, '${response.dept}')`
+              `INSERT INTO department (name) VALUES ('${response.dept}')`
             )
             .then(([rows, fields]) => {
-              console.log('Department added.');
+              console.log("Department added.");
               departmentQuery();
+              startPrompt();
+            });
+        });
+      break;
+    case 7:
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            message: "Employee's first name:",
+            name: "first",
+          },
+          {
+            type: "input",
+            message: "Employee's last name:",
+            name: "last",
+          },
+          {
+            type: "list",
+            message: "Employee's last name:",
+            choices: roleChoices,
+            name: "role",
+          },
+          {
+            type: "list",
+            message: "Who is the employee's manager?",
+            choices: employeeChoices,
+            name: "manager",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${response.first}', '${response.last}', (SELECT id FROM role WHERE title = '${response.role}'), ${employeeChoices.indexOf(response.manager) + 1})`
+            )
+            .then(([rows, fields]) => {
+              console.log("Employee added.");
+              employeeQuery();
               startPrompt();
             });
         });
