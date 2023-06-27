@@ -296,35 +296,43 @@ const queryBuilder = function (action) {
             });
         });
       break;
-      case 9:
-        inquirer
-          .prompt([
-            {
-              type: "list",
-              message: "Employee to update:",
-              choices: employeeChoices,
-              name: "employee",
-            },
-            {
-              type: "list",
-              message: "Employee's role:",
-              choices: roleChoices,
-              name: "role",
-            },
-          ])
-          .then((response) => {
-            pool
-              .promise()
-              .query(
-                `UPDATE employee SET role_id = (SELECT id FROM role WHERE title = '${response.role}') WHERE first_name = '${response.employee.substring(0, response.employee.indexOf(' '))}' AND last_name = '${response.employee.substring(response.employee.indexOf(' ') + 1, response.employee.length)}'`
-              )
-              .then(([rows, fields]) => {
-                console.log("Employee's role updated.");
-                employeeQuery();
-                startPrompt();
-              });
-          });
-        break;
+    case 9:
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Employee to update:",
+            choices: employeeChoices,
+            name: "employee",
+          },
+          {
+            type: "list",
+            message: "Employee's role:",
+            choices: roleChoices,
+            name: "role",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `UPDATE employee SET role_id = (SELECT id FROM role WHERE title = '${
+                response.role
+              }') WHERE first_name = '${response.employee.substring(
+                0,
+                response.employee.indexOf(" ")
+              )}' AND last_name = '${response.employee.substring(
+                response.employee.indexOf(" ") + 1,
+                response.employee.length
+              )}'`
+            )
+            .then(([rows, fields]) => {
+              console.log("Employee's role updated.");
+              employeeQuery();
+              startPrompt();
+            });
+        });
+      break;
     case 10:
       inquirer
         .prompt([
@@ -345,11 +353,94 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `UPDATE employee SET manager_id = ${employeeChoices.indexOf(response.manager) + 1} WHERE first_name = '${response.employee.substring(0, response.employee.indexOf(' '))}' AND last_name = '${response.employee.substring(response.employee.indexOf(' ') + 1, response.employee.length)}'`
+              `UPDATE employee SET manager_id = ${
+                employeeChoices.indexOf(response.manager) + 1
+              } WHERE first_name = '${response.employee.substring(
+                0,
+                response.employee.indexOf(" ")
+              )}' AND last_name = '${response.employee.substring(
+                response.employee.indexOf(" ") + 1,
+                response.employee.length
+              )}'`
             )
             .then(([rows, fields]) => {
               console.log("Employee's manager updated.");
               employeeQuery();
+              startPrompt();
+            });
+        });
+      break;
+    case 11:
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Department to delete:",
+            choices: departmentChoices,
+            name: "department",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `DELETE FROM department WHERE name = '${response.department}'`
+            )
+            .then(([rows, fields]) => {
+              console.log("Department deleted.");
+              departmentQuery();
+              startPrompt();
+            });
+        });
+      break;
+    case 12:
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Employee to delete:",
+            choices: employeeChoices,
+            name: "employee",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `DELETE FROM employee WHERE first_name = '${response.employee.substring(
+                0,
+                response.employee.indexOf(" ")
+              )}' AND last_name = '${response.employee.substring(
+                response.employee.indexOf(" ") + 1,
+                response.employee.length
+              )}'`
+            )
+            .then(([rows, fields]) => {
+              console.log("Employee deleted.");
+              employeeQuery();
+              startPrompt();
+            });
+        });
+      break;
+    case 13:
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Role to delete:",
+            choices: roleChoices,
+            name: "role",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `DELETE FROM role WHERE title = '${response.role}'`
+            )
+            .then(([rows, fields]) => {
+              console.log("Role deleted.");
+              roleQuery();
               startPrompt();
             });
         });
