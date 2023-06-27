@@ -51,7 +51,7 @@ const employeeQuery = async function () {
         arr.push(results[i][0]);
       }
       employeeChoices = arr;
-      return  employeeChoices;
+      return employeeChoices;
     }
   );
 };
@@ -211,9 +211,7 @@ const queryBuilder = function (action) {
         .then((response) => {
           pool
             .promise()
-            .query(
-              `INSERT INTO department (name) VALUES ('${response.dept}')`
-            )
+            .query(`INSERT INTO department (name) VALUES ('${response.dept}')`)
             .then(([rows, fields]) => {
               console.log("Department added.");
               departmentQuery();
@@ -236,7 +234,7 @@ const queryBuilder = function (action) {
           },
           {
             type: "list",
-            message: "Employee's last name:",
+            message: "Employee's role:",
             choices: roleChoices,
             name: "role",
           },
@@ -251,11 +249,49 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${response.first}', '${response.last}', (SELECT id FROM role WHERE title = '${response.role}'), ${employeeChoices.indexOf(response.manager) + 1})`
+              `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${
+                response.first
+              }', '${response.last}', (SELECT id FROM role WHERE title = '${
+                response.role
+              }'), ${employeeChoices.indexOf(response.manager) + 1})`
             )
             .then(([rows, fields]) => {
               console.log("Employee added.");
               employeeQuery();
+              startPrompt();
+            });
+        });
+      break;
+    case 8:
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            message: "Role title:",
+            name: "title",
+          },
+          {
+            type: "input",
+            message: "Salary for role:",
+            name: "salary",
+          },
+          {
+            type: "list",
+            message: "What department will this role fall under?",
+            choices: departmentChoices,
+            name: "department",
+          },
+        ])
+        .then((response) => {
+          pool
+            .promise()
+            .query(
+              `INSERT INTO role (title, salary, department_id)
+              VALUES ('${response.title}', ${response.salary}, (SELECT id FROM department WHERE name = '${response.department}'))`
+            )
+            .then(([rows, fields]) => {
+              console.log("Role added.");
+              roleQuery();
               startPrompt();
             });
         });
