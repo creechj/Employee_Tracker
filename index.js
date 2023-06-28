@@ -103,7 +103,7 @@ const queryBuilder = function (action) {
     case 0:
       pool
         .promise()
-        .query("SELECT * FROM department")
+        .query("SELECT id, name as Department FROM department")
         .then(([rows, fields]) => {
           console.table(rows);
           startPrompt();
@@ -112,7 +112,7 @@ const queryBuilder = function (action) {
     case 1:
       pool
         .promise()
-        .query("SELECT * FROM employee")
+        .query("SELECT employee.id as id, first_name as 'First Name', last_name as 'Last Name', role.title as Title, (SELECT department.name FROM department WHERE department.id = role.department_id) as Department, CONCAT('$', FORMAT(role.salary, 0)) as Salary, (SELECT CONCAT(first_name,' ', last_name) FROM employee e2 WHERE e2.id = employee.manager_id) as Manager FROM employee LEFT JOIN role ON role.id = employee.role_id")
         .then(([rows, fields]) => {
           console.table(rows);
           startPrompt();
@@ -121,7 +121,7 @@ const queryBuilder = function (action) {
     case 2:
       pool
         .promise()
-        .query("SELECT * FROM role")
+        .query("SELECT role.id, title as Title, CONCAT('$', FORMAT(salary, 0)) as Salary, name as Department FROM role LEFT JOIN department ON department.id = role.department_id")
         .then(([rows, fields]) => {
           console.table(rows);
           startPrompt();
@@ -141,7 +141,7 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `SELECT * FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "${response.managers.substring(
+              `SELECT id, CONCAT(first_name, ' ', last_name) as Employee FROM employee WHERE manager_id = (SELECT id FROM employee WHERE first_name = "${response.managers.substring(
                 0,
                 response.managers.indexOf(" ")
               )}" AND last_name = "${response.managers.substring(
@@ -169,7 +169,7 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `SELECT * FROM employee WHERE employee.role_id IN (SELECT id FROM role WHERE department_id = (SELECT id FROM department WHERE name = '${response.departments}'))`
+              `SELECT id, CONCAT(first_name, ' ', last_name) as Employee, (SELECT title FROM role WHERE role.id = employee.role_id) as Position, manager_id as 'Manager ID' FROM employee WHERE employee.role_id IN (SELECT id FROM role WHERE department_id = (SELECT id FROM department WHERE name = '${response.departments}'))`
             )
             .then(([rows, fields]) => {
               console.table(rows);
@@ -191,7 +191,7 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `SELECT department.name as "Department Name", AVG(role.salary) * COUNT(employee.role_id) AS "Total Salary" FROM department, role JOIN employee ON employee.role_id = role.id WHERE department.name = '${response.departments}' AND role.department_id = department.id GROUP BY department.name, department_id`
+              `SELECT department.name as "Department Name", CONCAT('$', FORMAT(AVG(role.salary) * COUNT(employee.role_id), 0)) AS "Total Salary" FROM department, role LEFT JOIN employee ON employee.role_id = role.id WHERE department.name = '${response.departments}' AND role.department_id = department.id GROUP BY department.name, department_id`
             )
             .then(([rows, fields]) => {
               console.table(rows);
@@ -464,16 +464,3 @@ const startPrompt = function () {
 };
 
 startPrompt();
-
-// const testFunction = function() {
-//   var testString = 'Testing String'
-//  console.log(testString.substring(0, testString.indexOf(' ')));
-//  console.log(testString.substring(testString.indexOf(' ')+1, testString.length));
-// };
-
-// testFunction();
-
-// TODOs:
-// create query like employees for depts & roles
-// remember to recall these queries after updates to tables
-// finish list of query options
