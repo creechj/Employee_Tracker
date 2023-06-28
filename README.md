@@ -22,6 +22,11 @@ GitHub Repository can be found here:
 
 https://github.com/creechj/Employee_Tracker
 
+Video of usage:  
+
+https://drive.google.com/file/d/1KsDM1fvilKXw_ER8mKIaHI4zv_BHjZev/view
+
+
 
 ![Screenshot of Application](./assets/Employee_Tracker_Screenshot.png)
 
