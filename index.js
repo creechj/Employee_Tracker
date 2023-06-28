@@ -35,6 +35,7 @@ const menuOptions = [
 
 // array for dynamic prompt choices
 var employeeChoices = [];
+var managerChoices = [];
 var departmentChoices = [];
 var roleChoices = [];
 
@@ -52,6 +53,25 @@ const employeeQuery = async function () {
       }
       employeeChoices = arr;
       return employeeChoices;
+    }
+  );
+};
+
+// function to query employees by name
+const managerQuery = async function () {
+  pool.query(
+    {
+      sql: "SELECT CONCAT(first_name, ' ', last_name) AS employee FROM employee",
+      rowsAsArray: true,
+    },
+    function (err, results, fields) {
+      var arr = [];
+      for (let i = 0; i < results.length; i++) {
+        arr.push(results[i][0]);
+      }
+      arr.push(0)
+      managerChoices = arr;
+      return managerChoices;
     }
   );
 };
@@ -93,6 +113,7 @@ const roleQuery = async function () {
 };
 
 employeeQuery();
+managerQuery();
 departmentQuery();
 roleQuery();
 
@@ -112,7 +133,9 @@ const queryBuilder = function (action) {
     case 1:
       pool
         .promise()
-        .query("SELECT employee.id as id, first_name as 'First Name', last_name as 'Last Name', role.title as Title, (SELECT department.name FROM department WHERE department.id = role.department_id) as Department, CONCAT('$', FORMAT(role.salary, 0)) as Salary, (SELECT CONCAT(first_name,' ', last_name) FROM employee e2 WHERE e2.id = employee.manager_id) as Manager FROM employee LEFT JOIN role ON role.id = employee.role_id")
+        .query(
+          "SELECT employee.id as id, first_name as 'First Name', last_name as 'Last Name', role.title as Title, (SELECT department.name FROM department WHERE department.id = role.department_id) as Department, CONCAT('$', FORMAT(role.salary, 0)) as Salary, (SELECT CONCAT(first_name,' ', last_name) FROM employee e2 WHERE e2.id = employee.manager_id) as Manager FROM employee LEFT JOIN role ON role.id = employee.role_id"
+        )
         .then(([rows, fields]) => {
           console.table(rows);
           startPrompt();
@@ -121,7 +144,9 @@ const queryBuilder = function (action) {
     case 2:
       pool
         .promise()
-        .query("SELECT role.id, title as Title, CONCAT('$', FORMAT(salary, 0)) as Salary, name as Department FROM role LEFT JOIN department ON department.id = role.department_id")
+        .query(
+          "SELECT role.id, title as Title, CONCAT('$', FORMAT(salary, 0)) as Salary, name as Department FROM role LEFT JOIN department ON department.id = role.department_id"
+        )
         .then(([rows, fields]) => {
           console.table(rows);
           startPrompt();
@@ -241,7 +266,7 @@ const queryBuilder = function (action) {
           {
             type: "list",
             message: "Who is the employee's manager?",
-            choices: employeeChoices,
+            choices: managerChoices,
             name: "manager",
           },
         ])
@@ -253,7 +278,7 @@ const queryBuilder = function (action) {
                 response.first
               }', '${response.last}', (SELECT id FROM role WHERE title = '${
                 response.role
-              }'), ${employeeChoices.indexOf(response.manager) + 1})`
+              }'), IF(${employeeChoices.indexOf(response.manager) + 1}=0, null, ${employeeChoices.indexOf(response.manager) + 1}))`
             )
             .then(([rows, fields]) => {
               console.log("Employee added.");
@@ -345,7 +370,7 @@ const queryBuilder = function (action) {
           {
             type: "list",
             message: "Employee's manager:",
-            choices: employeeChoices,
+            choices: managerChoices,
             name: "manager",
           },
         ])
@@ -353,9 +378,11 @@ const queryBuilder = function (action) {
           pool
             .promise()
             .query(
-              `UPDATE employee SET manager_id = ${
+              `UPDATE employee SET manager_id = IF(${
                 employeeChoices.indexOf(response.manager) + 1
-              } WHERE first_name = '${response.employee.substring(
+              }=0, null, ${
+                employeeChoices.indexOf(response.manager) + 1
+              }) WHERE first_name = '${response.employee.substring(
                 0,
                 response.employee.indexOf(" ")
               )}' AND last_name = '${response.employee.substring(
@@ -435,9 +462,7 @@ const queryBuilder = function (action) {
         .then((response) => {
           pool
             .promise()
-            .query(
-              `DELETE FROM role WHERE title = '${response.role}'`
-            )
+            .query(`DELETE FROM role WHERE title = '${response.role}'`)
             .then(([rows, fields]) => {
               console.log("Role deleted.");
               roleQuery();
